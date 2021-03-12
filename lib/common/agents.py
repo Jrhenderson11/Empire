@@ -808,14 +808,10 @@ class Agents(object):
         agent.listener = listener_name
         Session.commit()
 
-    def rename_agent(self, old_name, new_name):
+    def rename_agent(self, old_name, new_name, force=False):
         """
         Rename a given agent from 'oldname' to 'newname'.
         """
-
-        if not new_name.isalnum():
-            print(helpers.color("[!] Only alphanumeric characters allowed for names."))
-            return False
 
         # rename the logging/downloads folder
         old_path = "%s/downloads/%s/" % (self.installPath, old_name)
@@ -824,8 +820,19 @@ class Agents(object):
 
         # check if the folder is already used
         if os.path.exists(new_path):
-            print(helpers.color("[!] Name already used by current or past agent."))
-            ret_val = False
+            if force == True:
+
+                i = 1
+                backup_name = f'{new_path}.tar.gz.{i}'
+                while os.path.exists(backup_name):
+                    i = i+1
+                    backup_name = f'{new_path}.tar.gz.{i}'
+                os.system(f"tar czf {backup_name} -C new_path .")
+                print(helpers.color(f"[!] Backed up past agent data to {backup_name}"))
+            else:
+                print(helpers.color("[!] Name already used by current or past agent."))
+                ret_val = False
+
         else:
             # move the old folder path to the new one
             if os.path.exists(old_path):
