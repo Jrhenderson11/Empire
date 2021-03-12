@@ -148,8 +148,6 @@ class MainMenu(cmd.Cmd):
         })
         dispatcher.send(signal, sender="empire")
 
-        # print the loading menu
-        messages.loading()
 
     def handle_event(self, signal, sender):
         """
@@ -1113,12 +1111,9 @@ class MainMenu(cmd.Cmd):
                             module_name.startswith(language)]
 
         mline = line.partition(' ')[2]
-
         offs = len(mline) - len(text)
 
-        module_names = [s[offs:] for s in module_names if s.startswith(mline)]
-
-        return module_names
+        return helpers.fuzzy_complete(module_names, mline, offs)
 
     def complete_reload(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
@@ -1127,24 +1122,27 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in module_names if s.startswith(mline)]
+        helpers.fuzzycomplete(module_names, mline, offs)
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
 
         stagerNames = list(self.stagers.stagers.keys())
-
-        if line.split(' ')[1].lower() in stagerNames:
+        
+        if len(line.split(' ')) > 2 and line.split(' ')[1].lower() in stagerNames:
+            # Complete listener name
             listenerNames = self.listeners.get_listener_names()
             endLine = ' '.join(line.split(' ')[1:])
             mline = endLine.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in listenerNames if s.startswith(mline)]
-        else:
-            # otherwise tab-complate the stager names
+            return helpers.fuzzy_complete(listenerNames, mline, offs)
+        elif line.split(' ')[1].lower() not in stagerNames:
+            # otherwise tab-complete the stager names
             mline = line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in stagerNames if s.startswith(mline)]
+            return helpers.fuzzy_complete(stagerNames, mline, offs)
+        else:
+            return []
 
     def complete_uselistener(self, text, line, begidx, endidx):
         "Tab-complete an uselistener command"
@@ -1152,7 +1150,7 @@ class MainMenu(cmd.Cmd):
         names = list(self.listeners.loadedListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        return helpers.fuzzycomplete(names, mline, offs)
 
     def complete_setlist(self, text, line, begidx, endidx):
         "Tab-complete a global list option"
@@ -1164,7 +1162,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        return helpers.fuzzycomplete(options, mline, offs)
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
@@ -1176,7 +1174,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        return helpers.fuzzycomplete(options, mline, offs)
 
     def complete_load(self, text, line, begidx, endidx):
         "Tab-complete a module load path."
@@ -1199,7 +1197,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in commands if s.startswith(mline)]
+        return helpers.fuzzycomplete(commands, mline, offs)
 
     def complete_interact(self, text, line, begidx, endidx):
         "Tab-complete an interact command"
@@ -1207,7 +1205,7 @@ class MainMenu(cmd.Cmd):
         names = self.agents.get_agent_names_db()
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        return helpers.fuzzycomplete(names, mline, offs)
 
     def complete_list(self, text, line, begidx, endidx):
         "Tab-complete list"
@@ -1221,7 +1219,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        return helpers.fuzzycomplete(options, mline, offs)
 
 
 class SubMenu(cmd.Cmd):
@@ -1287,10 +1285,167 @@ class SubMenu(cmd.Cmd):
             self.stdout.write("\n")
 
 
+class CommonSubMenu(SubMenu):
+    """
+    Holds a few command stubs used by multiple SubMenus
+    """
+    
+    def do_usestager(self, line):
+        "Use an Empire stager."
+
+        parts = line.split(' ')
+
+        if parts[0] not in self.mainMenu.stagers.stagers:
+            print(helpers.color("[!] Error: invalid stager module"))
+
+        elif len(parts) == 1:
+            stager_menu = StagerMenu(self.mainMenu, parts[0])
+            stager_menu.cmdloop()
+        elif len(parts) == 2:
+            listener = parts[1]
+            if not self.mainMenu.listeners.is_listener_valid(listener):
+                print(helpers.color("[!] Please enter a valid listener name or ID"))
+            else:
+                self.mainMenu.stagers.set_stager_option('Listener', listener)
+                stager_menu = StagerMenu(self.mainMenu, parts[0])
+                stager_menu.cmdloop()
+        else:
+            print(helpers.color("[!] Error in AgentsMenu's do_userstager()"))
+
+    def do_usemodule(self, line):
+        "Use an Empire module."
+
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        module = line.strip().rstrip("*")
+
+        if module not in self.mainMenu.modules.modules:
+            print(helpers.color("[!] Error: invalid module"))
+        else:
+            # set agent to "all"
+            module_menu = ModuleMenu(self.mainMenu, line, agent="all")
+            module_menu.cmdloop()
+
+    def do_searchmodule(self, line):
+        "Search Empire module names/descriptions."
+
+        searchTerm = line.strip()
+
+        if searchTerm.strip() == "":
+            print(helpers.color("[!] Please enter a search term."))
+        else:
+            self.mainMenu.modules.search_modules(searchTerm)
+
+    def do_uselistener(self, line):
+        "Use an Empire listener module."
+
+        parts = line.split(' ')
+
+        if parts[0] not in self.mainMenu.listeners.loadedListeners:
+            print(helpers.color("[!] Error: invalid listener module"))
+        else:
+            listenerMenu = ListenerMenu(self.mainMenu, parts[0])
+            listenerMenu.cmdloop()
+
+    def do_interact(self, line):
+        "Interact with a particular agent."
+
+        name = line.strip()
+
+        sessionID = self.mainMenu.agents.get_agent_id_db(name)
+
+        if sessionID and sessionID != '' and sessionID in self.mainMenu.agents.agents:
+            AgentMenu(self.mainMenu, sessionID)
+        else:
+            print(helpers.color("[!] Please enter a valid agent name"))
+
+    def do_launcher(self, line):
+        "Generate an initial launcher for a listener."
+
+        parts = line.strip().split()
+        if len(parts) != 2:
+            print(helpers.color("[!] Please enter 'launcher <language> <listenerName>'"))
+            return
+        else:
+            language = parts[0].lower()
+            listenerName = self.mainMenu.listeners.get_listener_name(parts[1])
+
+        if listenerName:
+            try:
+                # set the listener value for the launcher
+                listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
+                stager = self.mainMenu.stagers.stagers['multi/launcher']
+                stager.options['Listener']['Value'] = listenerName
+                stager.options['Language']['Value'] = language
+                stager.options['Base64']['Value'] = "True"
+                try:
+                    stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                    stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+                except:
+                    pass
+                if self.mainMenu.obfuscate:
+                    stager.options['Obfuscate']['Value'] = "True"
+                else:
+                    stager.options['Obfuscate']['Value'] = "False"
+
+                # dispatch this event
+                message = "[*] Generated launcher"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message,
+                    'options': stager.options
+                })
+                dispatcher.send(signal, sender="empire")
+
+                print(stager.generate())
+            except Exception as e:
+                print(helpers.color("[!] Error generating launcher: %s" % (e)))
+
+        else:
+            print(helpers.color("[!] Please enter a valid listenerName"))
+      
+    def complete_usemodule(self, text, line, begidx, endidx):
+        "Tab-complete an Empire PowerShell module path"
+        return self.mainMenu.complete_usemodule(text, line, begidx, endidx)
+
+    def complete_usestager(self, text, line, begidx, endidx):
+        "Tab-complete an Empire stager module path."
+        return self.mainMenu.complete_usestager(text, line, begidx, endidx)
+
+    def complete_interact(self, text, line, begidx, endidx):
+        "Tab-complete an interact command"
+
+        names = self.mainMenu.agents.get_agent_names_db()
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+
+        if sys.version[0] != "2":
+            names_return = b','.join(names).decode("UTF-8").split(',')
+        else:
+            names_return = names
+        return helpers.fuzzycomplete(names_return, mline, offs)
+    
+    def complete_launcher(self, text, line, begidx, endidx):
+        "Tab-complete language types and listener names/IDs"
+
+        languages = ['powershell', 'python']
+
+        if line.split(' ')[1].lower() in languages:
+            # if we already have a language name, tab-complete listener names
+            listenerNames = self.mainMenu.listeners.get_listener_names()
+            end_line = ' '.join(line.split(' ')[1:])
+            mline = end_line.partition(' ')[2]
+            offs = len(mline) - len(text)
+            return helpers.fuzzycomplete(listenerNames, mline, offs)
+        else:
+            # otherwise tab-complate the stager names
+            mline = line.partition(' ')[2]
+            offs = len(mline) - len(text)
+            return helpers.fuzzycomplete(languages, mline, offs)
+
 # def preloop(self):
 #     traceback.print_stack()
 
-class AgentsMenu(SubMenu):
+class AgentsMenu(CommonSubMenu):
     """
     The main class used by Empire to drive the 'agents' menu.
     """
@@ -1367,20 +1522,10 @@ class AgentsMenu(SubMenu):
         if len(parts) == 2:
             # replace the old name with the new name
             self.mainMenu.agents.rename_agent(parts[0], parts[1])
+        elif len(parts) == 3 and parts[2] in ['-f']:
+            self.mainMenu.agents.rename_agent(parts[0], parts[1], force=True)
         else:
             print(helpers.color("[!] Please enter an agent name and new name"))
-
-    def do_interact(self, line):
-        "Interact with a particular agent."
-
-        name = line.strip()
-
-        sessionID = self.mainMenu.agents.get_agent_id_db(name)
-
-        if sessionID and sessionID != '' and sessionID in self.mainMenu.agents.agents:
-            AgentMenu(self.mainMenu, sessionID)
-        else:
-            print(helpers.color("[!] Please enter a valid agent name"))
 
     def do_kill(self, line):
         "Task one or more agents to exit."
@@ -1727,75 +1872,6 @@ class AgentsMenu(SubMenu):
             else:
                 print(helpers.color("[!] Invalid agent name"))
 
-    def do_usestager(self, line):
-        "Use an Empire stager."
-
-        parts = line.split(' ')
-
-        if parts[0] not in self.mainMenu.stagers.stagers:
-            print(helpers.color("[!] Error: invalid stager module"))
-
-        elif len(parts) == 1:
-            stager_menu = StagerMenu(self.mainMenu, parts[0])
-            stager_menu.cmdloop()
-        elif len(parts) == 2:
-            listener = parts[1]
-            if not self.mainMenu.listeners.is_listener_valid(listener):
-                print(helpers.color("[!] Please enter a valid listener name or ID"))
-            else:
-                self.mainMenu.stagers.set_stager_option('Listener', listener)
-                stager_menu = StagerMenu(self.mainMenu, parts[0])
-                stager_menu.cmdloop()
-        else:
-            print(helpers.color("[!] Error in AgentsMenu's do_userstager()"))
-
-    def do_usemodule(self, line):
-        "Use an Empire PowerShell module."
-
-        # Strip asterisks added by MainMenu.complete_usemodule()
-        module = line.strip().rstrip("*")
-
-        if module not in self.mainMenu.modules.modules:
-            print(helpers.color("[!] Error: invalid module"))
-        else:
-            # set agent to "all"
-            module_menu = ModuleMenu(self.mainMenu, line, agent="all")
-            module_menu.cmdloop()
-
-    def do_searchmodule(self, line):
-        "Search Empire module names/descriptions."
-
-        searchTerm = line.strip()
-
-        if searchTerm.strip() == "":
-            print(helpers.color("[!] Please enter a search term."))
-        else:
-            self.mainMenu.modules.search_modules(searchTerm)
-
-    def do_uselistener(self, line):
-        "Use an Empire listener module."
-
-        parts = line.split(' ')
-
-        if parts[0] not in self.mainMenu.listeners.loadedListeners:
-            print(helpers.color("[!] Error: invalid listener module"))
-        else:
-            listenerMenu = ListenerMenu(self.mainMenu, parts[0])
-            listenerMenu.cmdloop()
-
-    def complete_interact(self, text, line, begidx, endidx):
-        "Tab-complete an interact command"
-
-        names = self.mainMenu.agents.get_agent_names_db()
-        mline = line.partition(' ')[2]
-        offs = len(mline) - len(text)
-
-        if sys.version[0] != "2":
-            names_return = b','.join(names).decode("UTF-8").split(',')
-        else:
-            names_return = names
-        return [s[offs:] for s in names_return if s.startswith(mline)]
-
     def complete_rename(self, text, line, begidx, endidx):
         "Tab-complete a rename command"
 
@@ -1807,7 +1883,7 @@ class AgentsMenu(SubMenu):
         names = self.mainMenu.agents.get_agent_names_db() + ["all", "autorun"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        return helpers.fuzzycomplete(names, mline, offs)
 
     def complete_remove(self, text, line, begidx, endidx):
         "Tab-complete a remove command"
@@ -1815,7 +1891,7 @@ class AgentsMenu(SubMenu):
         names = self.mainMenu.agents.get_agent_names_db() + ["all", "stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_list(self, text, line, begidx, endidx):
         "Tab-complete a list command"
@@ -1823,7 +1899,7 @@ class AgentsMenu(SubMenu):
         options = ["stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        helpers.fuzzycomplete(options, mline, offs)
 
     def complete_kill(self, text, line, begidx, endidx):
         "Tab-complete a kill command"
@@ -1849,14 +1925,6 @@ class AgentsMenu(SubMenu):
         "Tab-complete a workinghours command"
 
         return self.complete_clear(text, line, begidx, endidx)
-
-    def complete_usemodule(self, text, line, begidx, endidx):
-        "Tab-complete an Empire PowerShell module path"
-        return self.mainMenu.complete_usemodule(text, line, begidx, endidx)
-
-    def complete_usestager(self, text, line, begidx, endidx):
-        "Tab-complete an Empire stager module path."
-        return self.mainMenu.complete_usestager(text, line, begidx, endidx)
 
     def complete_creds(self, text, line, begidx, endidx):
         "Tab-complete 'creds' commands."
@@ -2809,7 +2877,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in self.mainMenu.listeners.get_listener_names() if s.startswith(mline)]
+        helpers.fuzzycomplete(self, mline, offs)
 
     def complete_injectshellcode(self, text, line, begidx, endidx):
         "Tab-complete injectshellcode option values."
@@ -2831,7 +2899,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in ["kill"] if s.startswith(mline)]
+        helpers.fuzzycomplete(["kill"], mline, offs)
 
     def complete_scriptimport(self, text, line, begidx, endidx):
         "Tab-complete a PowerShell script path"
@@ -2845,7 +2913,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in functions if s.startswith(mline)]
+        helpers.fuzzycomplete(functions, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path"
@@ -3608,7 +3676,7 @@ except Exception as e:
 #     return helpers.complete_path(text,line)
 
 
-class ListenersMenu(SubMenu):
+class ListenersMenu(CommonSubMenu):
     """
     The main class used by Empire to drive the 'listener' menu.
     """
@@ -3671,39 +3739,6 @@ class ListenersMenu(SubMenu):
         else:
             self.mainMenu.listeners.delete_listener(listener_id)
 
-    def do_usestager(self, line):
-        "Use an Empire stager."
-
-        parts = line.split(' ')
-
-        if parts[0] not in self.mainMenu.stagers.stagers:
-            print(helpers.color("[!] Error: invalid stager module"))
-
-        elif len(parts) == 1:
-            stager_menu = StagerMenu(self.mainMenu, parts[0])
-            stager_menu.cmdloop()
-        elif len(parts) == 2:
-            listener = parts[1]
-            if not self.mainMenu.listeners.is_listener_valid(listener):
-                print(helpers.color("[!] Please enter a valid listener name or ID"))
-            else:
-                self.mainMenu.stagers.set_stager_option('Listener', listener)
-                stager_menu = StagerMenu(self.mainMenu, parts[0])
-                stager_menu.cmdloop()
-        else:
-            print(helpers.color("[!] Error in ListenerMenu's do_userstager()"))
-
-    def do_uselistener(self, line):
-        "Use an Empire listener module."
-
-        parts = line.split(' ')
-
-        if parts[0] not in self.mainMenu.listeners.loadedListeners:
-            print(helpers.color("[!] Error: invalid listener module"))
-        else:
-            listenerMenu = ListenerMenu(self.mainMenu, parts[0])
-            listenerMenu.cmdloop()
-
     def do_info(self, line):
         "Display information for the given active listener."
 
@@ -3713,51 +3748,6 @@ class ListenersMenu(SubMenu):
             print(helpers.color("[!] Invalid listener name"))
         else:
             messages.display_active_listener(self.mainMenu.listeners.activeListeners[listenerName])
-
-    def do_launcher(self, line):
-        "Generate an initial launcher for a listener."
-
-        parts = line.strip().split()
-        if len(parts) != 2:
-            print(helpers.color("[!] Please enter 'launcher <language> <listenerName>'"))
-            return
-        else:
-            language = parts[0].lower()
-            listenerName = self.mainMenu.listeners.get_listener_name(parts[1])
-
-        if listenerName:
-            try:
-                # set the listener value for the launcher
-                listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
-                stager = self.mainMenu.stagers.stagers['multi/launcher']
-                stager.options['Listener']['Value'] = listenerName
-                stager.options['Language']['Value'] = language
-                stager.options['Base64']['Value'] = "True"
-                try:
-                    stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
-                    stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
-                except:
-                    pass
-                if self.mainMenu.obfuscate:
-                    stager.options['Obfuscate']['Value'] = "True"
-                else:
-                    stager.options['Obfuscate']['Value'] = "False"
-
-                # dispatch this event
-                message = "[*] Generated launcher"
-                signal = json.dumps({
-                    'print': False,
-                    'message': message,
-                    'options': stager.options
-                })
-                dispatcher.send(signal, sender="empire")
-
-                print(stager.generate())
-            except Exception as e:
-                print(helpers.color("[!] Error generating launcher: %s" % (e)))
-
-        else:
-            print(helpers.color("[!] Please enter a valid listenerName"))
 
     def do_enable(self, line):
         "Enables and starts one or all listeners."
@@ -3817,7 +3807,7 @@ class ListenersMenu(SubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_enable(self, text, line, begidx, endidx):
         # tab complete for inactive listener names
@@ -3826,7 +3816,7 @@ class ListenersMenu(SubMenu):
         names = list(inactive.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_disable(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3834,7 +3824,7 @@ class ListenersMenu(SubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_delete(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3842,25 +3832,7 @@ class ListenersMenu(SubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
-
-    def complete_launcher(self, text, line, begidx, endidx):
-        "Tab-complete language types and listener names/IDs"
-
-        languages = ['powershell', 'python']
-
-        if line.split(' ')[1].lower() in languages:
-            # if we already have a language name, tab-complete listener names
-            listenerNames = self.mainMenu.listeners.get_listener_names()
-            end_line = ' '.join(line.split(' ')[1:])
-            mline = end_line.partition(' ')[2]
-            offs = len(mline) - len(text)
-            return [s[offs:] for s in listenerNames if s.startswith(mline)]
-        else:
-            # otherwise tab-complate the stager names
-            mline = line.partition(' ')[2]
-            offs = len(mline) - len(text)
-            return [s[offs:] for s in languages if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_info(self, text, line, begidx, endidx):
         "Tab-complete listener names/IDs"
@@ -3869,7 +3841,7 @@ class ListenersMenu(SubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
     def complete_uselistener(self, text, line, begidx, endidx):
         "Tab-complete an uselistener command"
@@ -3877,7 +3849,7 @@ class ListenersMenu(SubMenu):
         names = list(self.mainMenu.listeners.loadedListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
 
 class ListenerMenu(SubMenu):
@@ -3902,6 +3874,9 @@ class ListenerMenu(SubMenu):
         "Display listener module options."
         messages.display_listener_module(self.listener)
 
+    def do_run(self, line):
+        self.do_execute(line)
+        
     def do_execute(self, line):
         "Execute the given listener module."
 
@@ -4005,12 +3980,12 @@ class ListenerMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in listenerNames if s.startswith(mline)]
+            helpers.fuzzycomplete(listenerNames, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        helpers.fuzzycomplete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4019,7 +3994,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        helpers.fuzzycomplete(options, mline, offs)
 
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types"
@@ -4028,7 +4003,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in languages if s.startswith(mline)]
+        helpers.fuzzycomplete(languages, mline, offs)
 
 
 class ModuleMenu(SubMenu):
@@ -4160,9 +4135,17 @@ class ModuleMenu(SubMenu):
                 if value == '""' or value == "''":
                     value = ""
 
+                if option not in self.module.options:
+                    # Try to match lowercase input as well
+                    for k in self.module.options:
+                        if k.lower() == option.lower():
+                           option = k
+
                 self.module.options[option]['Value'] = value
+        except KeyError:
+            print(helpers.color("[!] Invalid option"))
         except:
-            print(helpers.color("[!] Error in setting option, likely invalid option name."))
+            print(helpers.color("[!] Error in setting option"))
 
     def do_unset(self, line):
         "Unset a module option."
@@ -4171,6 +4154,13 @@ class ModuleMenu(SubMenu):
 
         if line.lower() == "all":
             for option in self.module.options:
+
+                if option not in self.module.options:
+                    # Try to match lowercase input as well
+                    for k in self.module.options:
+                        if k.lower() == option.lower():
+                           option = k
+
                 self.module.options[option]['Value'] = ''
         if option not in self.module.options:
             print(helpers.color("[!] Invalid option specified."))
@@ -4197,6 +4187,9 @@ class ModuleMenu(SubMenu):
     def do_creds(self, line):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
+
+    def do_run(self, line):
+        self.do_execute(line)
 
     def do_execute(self, line):
         "Execute the given Empire module."
@@ -4355,7 +4348,7 @@ class ModuleMenu(SubMenu):
 
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in agentNames if s.startswith(mline)]
+            helpers.fuzzycomplete(agentNames, mline, offs)
 
         elif line.split(' ')[1].lower() == "listener":
             # if we're tab-completing a listener name, return all the names
@@ -4363,7 +4356,7 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in listenerNames if s.startswith(mline)]
+            helpers.fuzzycomplete(listenerNames, mline, offs)
 
         elif line.split(' ')[1].lower().endswith("path"):
             return helpers.complete_path(text, line, arg=True)
@@ -4379,12 +4372,12 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in languages if s.startswith(mline)]
+            helpers.fuzzycomplete(languages, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        helpers.fuzzycomplete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4393,7 +4386,7 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        helpers.fuzzycomplete(options, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
@@ -4410,10 +4403,10 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        helpers.fuzzycomplete(names, mline, offs)
 
 
-class StagerMenu(SubMenu):
+class StagerMenu(CommonSubMenu):
     """
     The main class used by Empire to drive the 'stager' menu.
     """
@@ -4560,42 +4553,33 @@ class StagerMenu(SubMenu):
         else:
             print(stagerOutput)
 
+    def do_run(self, line):
+        self.do_execute(line)
+
     def do_execute(self, line):
         "Generate/execute the given Empire stager."
         self.do_generate(line)
-
-    def do_interact(self, line):
-        "Interact with a particular agent."
-
-        name = line.strip()
-
-        if name != "" and self.mainMenu.agents.is_agent_present(name):
-            # resolve the passed name to a sessionID
-            sessionID = self.mainMenu.agents.get_agent_id_db(name)
-
-            agent_menu = AgentMenu(self.mainMenu, sessionID)
-        else:
-            print(helpers.color("[!] Please enter a valid agent name"))
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a stager option to set."
 
         options = list(self.stager.options.keys())
 
-        if line.split(' ')[1].lower() == "listener":
+        if len(line.split(' ')) > 2 and line.split(' ')[1].lower() == "listener":
             # if we're tab-completing a listener name, return all the names
             listenerNames = self.mainMenu.listeners.get_listener_names()
             end_line = ' '.join(line.split(' ')[1:])
 
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in listenerNames if s.startswith(mline)]
+            return helpers.fuzzy_complete(listenerNames, mline, offs)
+
         elif line.split(' ')[1].lower().endswith("language"):
             languages = ['powershell', 'python']
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return [s[offs:] for s in languages if s.startswith(mline)]
+            return helpers.fuzzy_complete(languages, mline, offs)
 
         elif line.split(' ')[1].lower().endswith("path"):
             # tab-complete any stager option that ends with 'path'
@@ -4604,7 +4588,8 @@ class StagerMenu(SubMenu):
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
+        
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a stager option to unset."
@@ -4613,13 +4598,4 @@ class StagerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return [s[offs:] for s in options if s.startswith(mline)]
-
-    def complete_interact(self, text, line, begidx, endidx):
-        "Tab-complete an interact command"
-
-        names = self.mainMenu.agents.get_agent_names_db()
-
-        mline = line.partition(' ')[2]
-        offs = len(mline) - len(text)
-        return [s[offs:] for s in names if s.startswith(mline)]
+        return helpers.fuzzy_complete(options, mline, offs)

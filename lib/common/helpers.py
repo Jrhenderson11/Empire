@@ -37,6 +37,8 @@ Includes:
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
     generate_random_script_var_name() - use in scripts to generate random variable names
+
+    fuzzy_complete(options, text, offset) - returns best matches for given input
 """
 from __future__ import division
 from __future__ import print_function
@@ -1021,3 +1023,12 @@ def slackMessage(slack_webhook_url, slack_text):
     message = {'text': slack_text}
     req = urllib.request.Request(slack_webhook_url, json.dumps(message).encode('UTF-8'))
     resp = urllib.request.urlopen(req)
+
+
+def fuzzy_complete(options, text, offset):
+
+    choices = [s[offset:] for s in options if s.lower().startswith(text.lower())]
+    if choices == []:
+        choices = [s for s in options if (text.lower() in s.lower())]
+    
+    return choices

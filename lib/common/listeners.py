@@ -100,7 +100,15 @@ class Listeners(object):
 
         for name, listenerObject in self.loadedListeners.items():
 
-            if (listenerName.lower() == 'all' or listenerName == name) and (option in listenerObject.options):
+            if (listenerName.lower() == 'all' or listenerName.lower() == name.lower()) and (option in listenerObject.options):
+
+                if option not in listenerObject.options:
+                    # Try to match lowercase input as well
+                    for k in listenerObject.options:
+                        if k.lower() == option.lower():
+                           option = k
+
+                self.module.options[option]['Value'] = value
 
                 # parse and auto-set some host parameters
                 if option == 'Host':
