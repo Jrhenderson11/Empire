@@ -41,6 +41,10 @@ if sys.version[0] == '2':
     print(helpers.color("[!] Please use Python 3"))
     sys.exit()
 
+if os.geteuid() != 0:
+    print(helpers.color("[!] Should be run as root"))
+    sys.exit()
+
 global serverExitCommand
 serverExitCommand = 'restart'
 
