@@ -630,14 +630,21 @@ class MainMenu(cmd.Cmd):
         "Use an Empire module."
         # Strip asterisks added by MainMenu.complete_usemodule()
         line = line.rstrip("*")
+
         if line not in self.modules.modules:
-            print(helpers.color("[!] Error: invalid module"))
-        else:
-            try:
-                module_menu = ModuleMenu(self, line)
-                module_menu.cmdloop()
-            except Exception as e:
-                raise e
+            found = False
+            for lang in ['python', 'powershell']:
+                if lang+"/"+line in self.modules.modules:
+                    line = lang+"/"+line
+                    found = True
+            if found == False:
+                print(helpers.color("[!] Error: invalid module"))
+
+        try:
+            module_menu = ModuleMenu(self, line)
+            module_menu.cmdloop()
+        except Exception as e:
+            raise e
 
     def do_searchmodule(self, line):
         "Search Empire module names/descriptions."
@@ -1106,11 +1113,16 @@ class MainMenu(cmd.Cmd):
             except KeyError:
                 pass
 
+        mline = line.partition(' ')[2]
+
         if language:
             module_names = [(module_name[len(language) + 1:]) for module_name in module_names if
                             module_name.startswith(language)]
-
-        mline = line.partition(' ')[2]
+        elif [language for language in ['python', 'powershell'] if language.startswith(mline)] == []:
+            old_module_names = module_names
+            module_names = []
+            for lang in ['python', 'powershell']:
+                module_names += [(module_name[len(lang) + 1:]) for module_name in old_module_names if module_name.startswith(lang)]
         offs = len(mline) - len(text)
 
         return helpers.fuzzy_complete(module_names, mline, offs)
