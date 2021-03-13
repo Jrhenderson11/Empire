@@ -631,17 +631,16 @@ class MainMenu(cmd.Cmd):
         # Strip asterisks added by MainMenu.complete_usemodule()
         line = line.rstrip("*")
 
-        if line not in self.modules.modules:
-            found = False
-            for lang in ['python', 'powershell']:
-                if lang+"/"+line in self.modules.modules:
-                    line = lang+"/"+line
-                    found = True
-            if found == False:
-                print(helpers.color("[!] Error: invalid module"))
+        if line.startswith('powershell') or line.startswith('python'):
+            module = line
+        else:
+            module = "powershell/%s" % (line)
+    
+        if module not in self.modules.modules:
+            print(helpers.color("[!] Error: invalid module"))
 
         try:
-            module_menu = ModuleMenu(self, line)
+            module_menu = ModuleMenu(self, module)
             module_menu.cmdloop()
         except Exception as e:
             raise e
@@ -1134,7 +1133,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(module_names, mline, offs)
+        return helpers.fuzzy_complete(module_names, mline, offs)
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
@@ -1330,13 +1329,16 @@ class CommonSubMenu(SubMenu):
         "Use an Empire module."
 
         # Strip asterisks added by MainMenu.complete_usemodule()
-        module = line.strip().rstrip("*")
+        if line.startswith('powershell') or line.startswith('python'):
+            module = line
+        else:
+            module = "powershell/%s" % (line)
 
         if module not in self.mainMenu.modules.modules:
             print(helpers.color("[!] Error: invalid module"))
         else:
             # set agent to "all"
-            module_menu = ModuleMenu(self.mainMenu, line, agent="all")
+            module_menu = ModuleMenu(self.mainMenu, module)
             module_menu.cmdloop()
 
     def do_searchmodule(self, line):
@@ -1905,7 +1907,7 @@ class AgentsMenu(CommonSubMenu):
         names = self.mainMenu.agents.get_agent_names_db() + ["all", "stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_list(self, text, line, begidx, endidx):
         "Tab-complete a list command"
@@ -2506,7 +2508,14 @@ class PowerShellAgentMenu(SubMenu):
         "Use an Empire PowerShell module."
 
         # Strip asterisks added by MainMenu.complete_usemodule()
-        module = "powershell/%s" % (line.strip().rstrip("*"))
+        line = line.strip().rstrip("*")
+
+        if line.startswith('powershell') or line.startswith('python'):
+            module = line
+        else:
+            module = "powershell/%s" % (line)
+
+        print(module)
 
         if module not in self.mainMenu.modules.modules:
             print(helpers.color("[!] Error: invalid module"))
@@ -2891,7 +2900,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(self, mline, offs)
+        return helpers.fuzzy_complete(self, mline, offs)
 
     def complete_injectshellcode(self, text, line, begidx, endidx):
         "Tab-complete injectshellcode option values."
@@ -2913,7 +2922,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(["kill"], mline, offs)
+        return helpers.fuzzy_complete(["kill"], mline, offs)
 
     def complete_scriptimport(self, text, line, begidx, endidx):
         "Tab-complete a PowerShell script path"
@@ -2927,7 +2936,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(functions, mline, offs)
+        return helpers.fuzzy_complete(functions, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path"
@@ -3519,7 +3528,10 @@ class PythonAgentMenu(SubMenu):
         "Use an Empire Python module."
 
         # Strip asterisks added by MainMenu.complete_usemodule()
-        module = "python/%s" % (line.strip().rstrip("*"))
+        if line.startswith('powershell') or line.startswith('python'):
+            module = line
+        else:
+            module = "python/%s" % (line)
 
         if module not in self.mainMenu.modules.modules:
             print(helpers.color("[!] Error: invalid module"))
@@ -3821,7 +3833,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_enable(self, text, line, begidx, endidx):
         # tab complete for inactive listener names
@@ -3830,7 +3842,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(inactive.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_disable(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3838,7 +3850,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_delete(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3846,7 +3858,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_info(self, text, line, begidx, endidx):
         "Tab-complete listener names/IDs"
@@ -3855,7 +3867,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_uselistener(self, text, line, begidx, endidx):
         "Tab-complete an uselistener command"
@@ -3863,7 +3875,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.loadedListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
 
 class ListenerMenu(SubMenu):
@@ -3994,7 +4006,7 @@ class ListenerMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzy_complete(listenerNames, mline, offs)
+            return helpers.fuzzy_complete(listenerNames, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
@@ -4018,7 +4030,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(languages, mline, offs)
+        return helpers.fuzzy_complete(languages, mline, offs)
 
 
 class ModuleMenu(SubMenu):
@@ -4186,7 +4198,10 @@ class ModuleMenu(SubMenu):
         "Use an Empire PowerShell module."
 
         # Strip asterisks added by MainMenu.complete_usemodule()
-        module = line.strip().rstrip("*")
+        if line.startswith('powershell') or line.startswith('python'):
+            module = line
+        else:
+            module = "powershell/%s" % (line)
 
         if module not in self.mainMenu.modules.modules:
             print(helpers.color("[!] Error: invalid module"))
@@ -4196,7 +4211,7 @@ class ModuleMenu(SubMenu):
                 _agent = self.module.options['Agent']['Value']
 
                 line = line.strip("*")
-            module_menu = ModuleMenu(self.mainMenu, line, agent=_agent)
+            module_menu = ModuleMenu(self.mainMenu, module, agent=_agent)
             module_menu.cmdloop()
 
     def do_creds(self, line):
@@ -4363,7 +4378,8 @@ class ModuleMenu(SubMenu):
 
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzy_complete(agentNames, mline, offs)
+
+            return helpers.fuzzy_complete(agentNames, mline, offs)
 
         elif line.split(' ')[1].lower() == "listener":
             # if we're tab-completing a listener name, return all the names
@@ -4371,7 +4387,7 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzy_complete(listenerNames, mline, offs)
+            return helpers.fuzzy_complete(listenerNames, mline, offs)
 
         elif line.split(' ')[1].lower().endswith("path"):
             return helpers.complete_path(text, line, arg=True)
@@ -4387,7 +4403,7 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzy_complete(languages, mline, offs)
+            return helpers.fuzzy_complete(languages, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
@@ -4418,7 +4434,7 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
 
 class StagerMenu(CommonSubMenu):

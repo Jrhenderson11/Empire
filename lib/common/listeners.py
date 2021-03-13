@@ -108,7 +108,7 @@ class Listeners(object):
                         if k.lower() == option.lower():
                            option = k
 
-                self.module.options[option]['Value'] = value
+                listenerObject.options[option]['Value'] = value
 
                 # parse and auto-set some host parameters
                 if option == 'Host':
