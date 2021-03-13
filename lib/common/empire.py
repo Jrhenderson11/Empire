@@ -2515,8 +2515,6 @@ class PowerShellAgentMenu(SubMenu):
         else:
             module = "powershell/%s" % (line)
 
-        print(module)
-
         if module not in self.mainMenu.modules.modules:
             print(helpers.color("[!] Error: invalid module"))
         else:
