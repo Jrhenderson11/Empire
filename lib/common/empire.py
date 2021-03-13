@@ -1134,7 +1134,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(module_names, mline, offs)
+        helpers.fuzzy_complete(module_names, mline, offs)
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
@@ -1160,9 +1160,10 @@ class MainMenu(cmd.Cmd):
         "Tab-complete an uselistener command"
 
         names = list(self.listeners.loadedListeners.keys())
+        print(names)
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_setlist(self, text, line, begidx, endidx):
         "Tab-complete a global list option"
@@ -1174,7 +1175,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
@@ -1186,7 +1187,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_load(self, text, line, begidx, endidx):
         "Tab-complete a module load path."
@@ -1209,7 +1210,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(commands, mline, offs)
+        return helpers.fuzzy_complete(commands, mline, offs)
 
     def complete_interact(self, text, line, begidx, endidx):
         "Tab-complete an interact command"
@@ -1217,7 +1218,7 @@ class MainMenu(cmd.Cmd):
         names = self.agents.get_agent_names_db()
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_list(self, text, line, begidx, endidx):
         "Tab-complete list"
@@ -1231,7 +1232,7 @@ class MainMenu(cmd.Cmd):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
 
 class SubMenu(cmd.Cmd):
@@ -1434,7 +1435,7 @@ class CommonSubMenu(SubMenu):
             names_return = b','.join(names).decode("UTF-8").split(',')
         else:
             names_return = names
-        return helpers.fuzzycomplete(names_return, mline, offs)
+        return helpers.fuzzy_complete(names_return, mline, offs)
     
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types and listener names/IDs"
@@ -1447,12 +1448,12 @@ class CommonSubMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return helpers.fuzzycomplete(listenerNames, mline, offs)
+            return helpers.fuzzy_complete(listenerNames, mline, offs)
         else:
             # otherwise tab-complate the stager names
             mline = line.partition(' ')[2]
             offs = len(mline) - len(text)
-            return helpers.fuzzycomplete(languages, mline, offs)
+            return helpers.fuzzy_complete(languages, mline, offs)
 
 # def preloop(self):
 #     traceback.print_stack()
@@ -1895,7 +1896,7 @@ class AgentsMenu(CommonSubMenu):
         names = self.mainMenu.agents.get_agent_names_db() + ["all", "autorun"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        return helpers.fuzzycomplete(names, mline, offs)
+        return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_remove(self, text, line, begidx, endidx):
         "Tab-complete a remove command"
@@ -1903,7 +1904,7 @@ class AgentsMenu(CommonSubMenu):
         names = self.mainMenu.agents.get_agent_names_db() + ["all", "stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_list(self, text, line, begidx, endidx):
         "Tab-complete a list command"
@@ -1911,7 +1912,7 @@ class AgentsMenu(CommonSubMenu):
         options = ["stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(options, mline, offs)
+        helpers.fuzzy_complete(options, mline, offs)
 
     def complete_kill(self, text, line, begidx, endidx):
         "Tab-complete a kill command"
@@ -2889,7 +2890,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(self, mline, offs)
+        helpers.fuzzy_complete(self, mline, offs)
 
     def complete_injectshellcode(self, text, line, begidx, endidx):
         "Tab-complete injectshellcode option values."
@@ -2911,7 +2912,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(["kill"], mline, offs)
+        helpers.fuzzy_complete(["kill"], mline, offs)
 
     def complete_scriptimport(self, text, line, begidx, endidx):
         "Tab-complete a PowerShell script path"
@@ -2925,7 +2926,7 @@ class PowerShellAgentMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(functions, mline, offs)
+        helpers.fuzzy_complete(functions, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path"
@@ -3819,7 +3820,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_enable(self, text, line, begidx, endidx):
         # tab complete for inactive listener names
@@ -3828,7 +3829,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(inactive.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_disable(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3836,7 +3837,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_delete(self, text, line, begidx, endidx):
         # tab complete for listener names
@@ -3844,7 +3845,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys()) + ["all"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_info(self, text, line, begidx, endidx):
         "Tab-complete listener names/IDs"
@@ -3853,7 +3854,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.activeListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
     def complete_uselistener(self, text, line, begidx, endidx):
         "Tab-complete an uselistener command"
@@ -3861,7 +3862,7 @@ class ListenersMenu(CommonSubMenu):
         names = list(self.mainMenu.listeners.loadedListeners.keys())
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
 
 class ListenerMenu(SubMenu):
@@ -3992,12 +3993,12 @@ class ListenerMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzycomplete(listenerNames, mline, offs)
+            helpers.fuzzy_complete(listenerNames, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(options, mline, offs)
+        helpers.fuzzy_complete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4006,7 +4007,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(options, mline, offs)
+        helpers.fuzzy_complete(options, mline, offs)
 
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types"
@@ -4015,7 +4016,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(languages, mline, offs)
+        helpers.fuzzy_complete(languages, mline, offs)
 
 
 class ModuleMenu(SubMenu):
@@ -4360,7 +4361,7 @@ class ModuleMenu(SubMenu):
 
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzycomplete(agentNames, mline, offs)
+            helpers.fuzzy_complete(agentNames, mline, offs)
 
         elif line.split(' ')[1].lower() == "listener":
             # if we're tab-completing a listener name, return all the names
@@ -4368,7 +4369,7 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzycomplete(listenerNames, mline, offs)
+            helpers.fuzzy_complete(listenerNames, mline, offs)
 
         elif line.split(' ')[1].lower().endswith("path"):
             return helpers.complete_path(text, line, arg=True)
@@ -4384,12 +4385,12 @@ class ModuleMenu(SubMenu):
             end_line = ' '.join(line.split(' ')[1:])
             mline = end_line.partition(' ')[2]
             offs = len(mline) - len(text)
-            helpers.fuzzycomplete(languages, mline, offs)
+            helpers.fuzzy_complete(languages, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(options, mline, offs)
+        helpers.fuzzy_complete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4398,7 +4399,7 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(options, mline, offs)
+        helpers.fuzzy_complete(options, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
@@ -4415,7 +4416,7 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzycomplete(names, mline, offs)
+        helpers.fuzzy_complete(names, mline, offs)
 
 
 class StagerMenu(CommonSubMenu):
