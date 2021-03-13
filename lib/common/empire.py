@@ -1160,9 +1160,10 @@ class MainMenu(cmd.Cmd):
         "Tab-complete an uselistener command"
 
         names = list(self.listeners.loadedListeners.keys())
-        print(names)
+
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
+
         return helpers.fuzzy_complete(names, mline, offs)
 
     def complete_setlist(self, text, line, begidx, endidx):
