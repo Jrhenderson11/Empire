@@ -1913,7 +1913,7 @@ class AgentsMenu(CommonSubMenu):
         options = ["stale"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_kill(self, text, line, begidx, endidx):
         "Tab-complete a kill command"
@@ -3999,7 +3999,8 @@ class ListenerMenu(SubMenu):
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(options, mline, offs)
+
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4008,7 +4009,7 @@ class ListenerMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types"
@@ -4391,7 +4392,7 @@ class ModuleMenu(SubMenu):
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_unset(self, text, line, begidx, endidx):
         "Tab-complete a module option to unset."
@@ -4400,7 +4401,7 @@ class ModuleMenu(SubMenu):
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
-        helpers.fuzzy_complete(options, mline, offs)
+        return helpers.fuzzy_complete(options, mline, offs)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."

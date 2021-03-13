@@ -1028,6 +1028,7 @@ def slackMessage(slack_webhook_url, slack_text):
 def fuzzy_complete(options, text, offset):
 
     choices = [s[offset:] for s in options if s.lower().startswith(text.lower())]
+
     if choices == []:
         choices = [s for s in options if (text.lower() in s.lower())]
     
