@@ -136,7 +136,7 @@ class MainMenu(cmd.Cmd):
         self.users = users.Users(self)
         self.socketio: Optional[SocketIO] = None
         self.resourceQueue = []
-        # A hashtable of autruns based on agent language
+        # A hashtable of autoruns based on agent language
         self.autoRuns = {}
         self.handle_args()
         self.startup_plugins()
@@ -3902,6 +3902,8 @@ class ListenerMenu(SubMenu):
         self.doc_header = 'Listener Commands'
 
         self.listener = self.mainMenu.listeners.loadedListeners[listenerName]
+
+        self.mainMenu.listeners.set_listener_option(listenerName, 'Name', helpers.generate_cat_name())
         self.listenerName = listenerName
 
         # set the text prompt
@@ -3962,6 +3964,12 @@ class ListenerMenu(SubMenu):
 
         try:
             option = parts[0]
+            for opt in self.listener.options:
+                if option.lower() == opt.lower():
+                    option = opt
+                    break
+
+
             if option not in self.listener.options:
                 print(helpers.color("[!] Invalid option specified."))
 
@@ -3974,9 +3982,8 @@ class ListenerMenu(SubMenu):
                     print(helpers.color("[!] Please specify an option value."))
             else:
                 # otherwise "set OPTION VALUE"
-                option = parts[0]
-                value = ' '.join(parts[1:])
 
+                value = ' '.join(parts[1:])
                 if value == '""' or value == "''":
                     value = ""
 
@@ -3989,6 +3996,10 @@ class ListenerMenu(SubMenu):
         "Unset a listener option."
 
         option = line.split()[0]
+        for opt in self.listener.options:
+            if option.lower() == opt.lower():
+                option = opt
+                break
 
         if line.lower() == "all":
             for option in self.listener.options:
@@ -4155,6 +4166,10 @@ class ModuleMenu(SubMenu):
 
         try:
             option = parts[0]
+            for opt in self.module.options:
+                if option.lower() == opt.lower():
+                    option = opt
+
             if option not in self.module.options:
                 print(helpers.color("[!] Invalid option specified."))
 
@@ -4167,17 +4182,10 @@ class ModuleMenu(SubMenu):
                     print(helpers.color("[!] Please specify an option value."))
             else:
                 # otherwise "set OPTION VALUE"
-                option = parts[0]
                 value = ' '.join(parts[1:])
 
                 if value == '""' or value == "''":
                     value = ""
-
-                if option not in self.module.options:
-                    # Try to match lowercase input as well
-                    for k in self.module.options:
-                        if k.lower() == option.lower():
-                           option = k
 
                 self.module.options[option]['Value'] = value
         except KeyError:
@@ -4511,6 +4519,9 @@ class StagerMenu(CommonSubMenu):
 
         try:
             option = parts[0]
+            for opt in self.stager.options:
+                if option.lower() == opt.lower():
+                    option = opt
             if option not in self.stager.options:
                 print(helpers.color("[!] Invalid option specified."))
 
@@ -4523,7 +4534,7 @@ class StagerMenu(CommonSubMenu):
                     print(helpers.color("[!] Please specify an option value."))
             else:
                 # otherwise "set OPTION VALUE"
-                option = parts[0]
+
                 value = ' '.join(parts[1:])
 
                 if value == '""' or value == "''":

@@ -1031,5 +1031,22 @@ def fuzzy_complete(options, text, offset):
 
     if choices == []:
         choices = [s for s in options if (text.lower() in s.lower())]
-    
+    if len(choices) == 1:
+        choices[0] = choices[0] + " "
     return choices
+
+
+def pick_random(input_list):
+	return input_list[random.randint(0, len(input_list)-1)]
+
+
+def generate_cat_name():
+    adjectives = [a for a in open("/wordlists/misc/adjectives.txt", 'r').read().split("\n") if len(a) > 1]
+
+    cats = open("/wordlists/misc/cats.txt", 'r').read().split("\n")
+    cats += [c.split(" ")[1] for c in cats if " " in c]
+
+    cats = list(set(cats))
+    random_cat_name = f'{pick_random(adjectives)}_{pick_random(cats).replace(" ", "_")}'.lower()
+
+    return random_cat_name

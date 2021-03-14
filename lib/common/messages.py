@@ -234,8 +234,10 @@ def display_listeners(listeners, type = "Active"):
         print('')
         print(helpers.color("[*] %s listeners:\n" % type))
 
-        print("  Name              Module          Host                                 Delay/Jitter   KillDate")
-        print("  ----              ------          ----                                 ------------   --------")
+        name_len = max([len(name) for name in listeners.keys()]) + 2
+
+        print(f"  Name{(name_len-4) * ' '}Module          Host                                 Delay/Jitter   KillDate")
+        print(f"  ----{(name_len-4) * ' '}------          ----                                 ------------   --------")
 
         for listenerName, listener in listeners.items():
 
@@ -265,7 +267,7 @@ def display_listeners(listeners, type = "Active"):
             else:
                 killDate = 'n/a'
 
-            print("  %s%s%s%s%s" % ('{0: <18}'.format(listenerName), '{0: <16}'.format(moduleName), '{0: <37}'.format(host), '{0: <15}'.format(connectInterval), '{0: <12}'.format(killDate)))
+            print("  %s%s%s%s%s" % (f'{listenerName}{(name_len-len(listenerName)) * " "}', '{0: <16}'.format(moduleName), '{0: <37}'.format(host), '{0: <15}'.format(connectInterval), '{0: <12}'.format(killDate)))
 
         print('')
 
