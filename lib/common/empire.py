@@ -4008,6 +4008,34 @@ class ListenerMenu(SubMenu):
             print(helpers.color("[!] Invalid option specified."))
         else:
             self.listener.options[option]['Value'] = ''
+  
+    def do_usestager(self, line):
+        "Use an Empire stager."
+
+        parts = line.split(' ')
+
+        if parts[0] not in self.mainMenu.stagers.stagers:
+            print(helpers.color("[!] Error: invalid stager module"))
+
+        elif len(parts) == 1:
+            # If we have only one listener active, use that
+            listener_names = self.mainMenu.listeners.get_listener_names()
+            if len(listener_names) == 1:
+                stager_menu = StagerMenu(self.mainMenu, parts[0], listener_names[0])
+            else:
+                stager_menu = StagerMenu(self.mainMenu, parts[0])
+
+            stager_menu.cmdloop()
+        elif len(parts) == 2:
+            listener = parts[1]
+            if not self.mainMenu.listeners.is_listener_valid(listener):
+                print(helpers.color("[!] Please enter a valid listener name or ID"))
+            else:
+                self.mainMenu.stagers.set_stager_option('Listener', listener)
+                stager_menu = StagerMenu(self.mainMenu, parts[0])
+                stager_menu.cmdloop()
+        else:
+            print(helpers.color("[!] Error in AgentsMenu's do_userstager()"))
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a listener option to set."
@@ -4053,6 +4081,11 @@ class ListenerMenu(SubMenu):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return helpers.fuzzy_complete(languages, mline, offs)
+
+    def complete_usestager(self, text, line, begidx, endidx):
+        "Tab-complete an Empire stager module path."
+        return self.mainMenu.complete_usestager(text, line, begidx, endidx)
+
 
 
 class ModuleMenu(SubMenu):

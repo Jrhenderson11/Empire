@@ -157,9 +157,21 @@ class Listeners(object):
                         listenerObject.options['Host']['Value'] = listenerObject.options['Host']['Value'].replace(
                             'http:', 'https:')
                     return True
+                if option == 'BindIP':
+                    new_ip = value
+                    listenerObject.options[option]['Value'] = new_ip
+                    # Check if Port is set and add it to host
+                    parts = listenerObject.options['Host']['Value']
+                    port = parts.split(":")[-1]
+                    if parts.startswith('https'):
+                        listenerObject.options['Host']['Value'] = "https://%s:%s" % (new_ip, port)
+                    elif parts.startswith('http'):
+                        listenerObject.options['Host']['Value'] = "http://%s:%s" % (new_ip, port)
+                    return True
 
                 if option == 'Port':
-                    listenerObject.options[option]['Value'] = value
+                    new_port = value
+                    listenerObject.options[option]['Value'] = new_port
                     # Check if Port is set and add it to host
                     parts = listenerObject.options['Host']['Value']
                     if parts.startswith('https'):
@@ -167,13 +179,13 @@ class Listeners(object):
                         address = ''.join(address.split(':')[0])
                         protocol = "https"
                         listenerObject.options['Host']['Value'] = "%s://%s:%s" % (
-                            protocol, address, listenerObject.options['Port']['Value'])
+                            protocol, address, new_port)
                     elif parts.startswith('http'):
                         address = parts[7:]
                         address = ''.join(address.split(':')[0])
                         protocol = "http"
                         listenerObject.options['Host']['Value'] = "%s://%s:%s" % (
-                            protocol, address, listenerObject.options['Port']['Value'])
+                            protocol, address, new_port)
                     return True
 
                 elif option == 'StagingKey':
