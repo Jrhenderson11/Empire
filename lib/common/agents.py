@@ -61,6 +61,7 @@ from __future__ import print_function
 import sqlite3
 import json
 import os
+import shutil
 import string
 import threading
 from builtins import object
@@ -823,45 +824,47 @@ class Agents(object):
             if force == True:
 
                 i = 1
-                backup_name = f'{new_path}.tar.gz.{i}'
+                backup_name = f'{new_path[:-1]}.tar.gz.{i}'
                 while os.path.exists(backup_name):
                     i = i+1
-                    backup_name = f'{new_path}.tar.gz.{i}'
-                os.system(f"tar czf {backup_name} -C new_path .")
+                    backup_name = f'{new_path[:-1]}.tar.gz.{i}'
+                os.system(f"tar czf {backup_name} -C {new_path} .")
+                shutil.rmtree(new_path)
+                if os.path.exists(new_path):
+                    print("wot")
                 print(helpers.color(f"[!] Backed up past agent data to {backup_name}"))
             else:
                 print(helpers.color("[!] Name already used by current or past agent."))
-                ret_val = False
+                return False
 
-        else:
-            # move the old folder path to the new one
-            if os.path.exists(old_path):
-                os.rename(old_path, new_path)
+        # move the old folder path to the new one
+        if os.path.exists(old_path):
+            
+            os.rename(old_path, new_path)
 
-            # rename the agent in the database
-            agent = Session().query(models.Agent).filter(models.Agent.name == old_name).first()
-            agent.name = new_name
+        # rename the agent in the database
+        agent = Session().query(models.Agent).filter(models.Agent.name == old_name).first()
+        agent.name = new_name
 
-            # change tasking and results to new agent
-            # maybe not needed
-            # taskings = Session().query(models.Tasking).filter(models.Tasking.agent == old_name).all()
-            # results = Session().query(models.Result).filter(models.Result.agent == old_name).all()
-            #
-            # if taskings:
-            #     for x in range(len(taskings)):
-            #         taskings[x].agent = new_name
-            #
-            # if results:
-            #     for x in range(len(results)):
-            #         results[x].agent = new_name
+        # change tasking and results to new agent
+        # maybe not needed
+        # taskings = Session().query(models.Tasking).filter(models.Tasking.agent == old_name).all()
+        # results = Session().query(models.Result).filter(models.Result.agent == old_name).all()
+        #
+        # if taskings:
+        #     for x in range(len(taskings)):
+        #         taskings[x].agent = new_name
+        #
+        # if results:
+        #     for x in range(len(results)):
+        #         results[x].agent = new_name
 
-            Session.commit()
-            ret_val = True
+        Session.commit()
 
         # signal in the log that we've renamed the agent
         self.save_agent_log(old_name, "[*] Agent renamed from %s to %s" % (old_name, new_name))
 
-        return ret_val
+        return True
 
     def set_agent_field_db(self, field, value, session_id):
         """

@@ -611,7 +611,13 @@ class MainMenu(cmd.Cmd):
                 print(helpers.color("[!] Error: invalid stager module"))
 
             elif len(parts) == 1:
-                stager_menu = StagerMenu(self, parts[0])
+                # If we have only one listener active, use that
+                listener_names = self.listeners.get_listener_names()
+                if len(listener_names) == 1:
+                    stager_menu = StagerMenu(self, parts[0], listener_names[0])
+                else:
+                    stager_menu = StagerMenu(self, parts[0])
+
                 stager_menu.cmdloop()
             elif len(parts) == 2:
                 listener = parts[1]
@@ -1305,6 +1311,7 @@ class CommonSubMenu(SubMenu):
     
     def do_usestager(self, line):
         "Use an Empire stager."
+        print("agentsmenu do_usestager")
 
         parts = line.split(' ')
 
@@ -1312,7 +1319,13 @@ class CommonSubMenu(SubMenu):
             print(helpers.color("[!] Error: invalid stager module"))
 
         elif len(parts) == 1:
-            stager_menu = StagerMenu(self.mainMenu, parts[0])
+            # If we have only one listener active, use that
+            listener_names = self.mainMenu.listeners.get_listener_names()
+            if len(listener_names) == 1:
+                stager_menu = StagerMenu(self.mainMenu, parts[0], listener_names[0])
+            else:
+                stager_menu = StagerMenu(self.mainMenu, parts[0])
+
             stager_menu.cmdloop()
         elif len(parts) == 2:
             listener = parts[1]
@@ -4454,7 +4467,7 @@ class StagerMenu(CommonSubMenu):
         # if this menu is being called from an listener menu
         if listener:
             # resolve the listener ID to a name, if applicable
-            listener = self.mainMenu.listeners.get_listener(listener)
+            listener = self.mainMenu.listeners.get_listener_name(listener)
             self.stager.options['Listener']['Value'] = listener
 
     def validate_options(self):
