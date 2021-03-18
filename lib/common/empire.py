@@ -37,6 +37,7 @@ import json
 import random
 import string
 import time
+import pyperclip
 
 # Empire imports
 from . import helpers
@@ -1311,7 +1312,6 @@ class CommonSubMenu(SubMenu):
     
     def do_usestager(self, line):
         "Use an Empire stager."
-        print("agentsmenu do_usestager")
 
         parts = line.split(' ')
 
@@ -1541,6 +1541,9 @@ class AgentsMenu(CommonSubMenu):
             self.mainMenu.do_list("agents " + str(' '.join(line.split(' ')[1:])))
         else:
             self.mainMenu.do_list("agents " + str(line))
+
+    def do_ls(self, line):
+        self.do_list(line)
 
     def do_rename(self, line):
         "Rename a particular agent."
@@ -1900,6 +1903,9 @@ class AgentsMenu(CommonSubMenu):
                 self.mainMenu.agents.remove_agent_db(session_id)
             else:
                 print(helpers.color("[!] Invalid agent name"))
+
+    def do_rm(self, line):
+        self.do_remove(line)
 
     def complete_rename(self, text, line, begidx, endidx):
         "Tab-complete a rename command"
@@ -3744,6 +3750,10 @@ class ListenersMenu(CommonSubMenu):
         else:
             self.mainMenu.do_list('listeners ' + str(line))
 
+    def do_ls(self, line):
+        self.do_list(line)
+
+
     def do_kill(self, line):
         "Kill one or all active listeners."
 
@@ -4042,21 +4052,25 @@ class ListenerMenu(SubMenu):
 
         options = list(self.listener.options.keys())
 
-        if line.split(' ')[1].lower().endswith('path'):
-            return helpers.complete_path(text, line, arg=True)
+        if len(line.split(' ')) > 2:
+            if line.split(' ')[1].lower().endswith('path'):
+                return helpers.complete_path(text, line, arg=True)
 
-        elif line.split(' ')[1].lower().endswith('file'):
-            return helpers.complete_path(text, line, arg=True)
+            elif line.split(' ')[1].lower().endswith('ip'):
+                return helpers.complete_ip(text, line)
 
-        elif line.split(' ')[1].lower().endswith('host'):
-            return [helpers.lhost()]
+            elif line.split(' ')[1].lower().endswith('file'):
+                return helpers.complete_path(text, line, arg=True)
 
-        elif line.split(' ')[1].lower().endswith('listener'):
-            listenerNames = self.mainMenu.listeners.get_listener_names()
-            end_line = ' '.join(line.split(' ')[1:])
-            mline = end_line.partition(' ')[2]
-            offs = len(mline) - len(text)
-            return helpers.fuzzy_complete(listenerNames, mline, offs)
+            elif line.split(' ')[1].lower().endswith('host'):
+                return [helpers.lhost()]
+
+            elif line.split(' ')[1].lower().endswith('listener'):
+                listenerNames = self.mainMenu.listeners.get_listener_names()
+                end_line = ' '.join(line.split(' ')[1:])
+                mline = end_line.partition(' ')[2]
+                offs = len(mline) - len(text)
+                return helpers.fuzzy_complete(listenerNames, mline, offs)
 
         # otherwise we're tab-completing an option name
         mline = line.partition(' ')[2]
@@ -4173,6 +4187,9 @@ class ModuleMenu(SubMenu):
             self.mainMenu.do_list("agents " + str(' '.join(line.split(' ')[1:])))
         else:
             print(helpers.color("[!] Please use 'list [agents/listeners] <modifier>'."))
+
+    def do_ls(self, line):
+        self.do_list(line)
 
     def do_reload(self, line):
         "Reload the current module."
@@ -4641,6 +4658,15 @@ class StagerMenu(CommonSubMenu):
 
     def do_run(self, line):
         self.do_execute(line)
+
+    def do_copy(self, line):
+        if not self.validate_options():
+            return
+
+        stagerOutput = self.stager.generate()
+        pyperclip.copy(stagerOutput)
+        print(helpers.color('Stager successfully copied to clipboard'))
+
 
     def do_execute(self, line):
         "Generate/execute the given Empire stager."

@@ -1035,6 +1035,19 @@ def fuzzy_complete(options, text, offset):
         choices[0] = choices[0] + " "
     return choices
 
+def complete_ip(text, line):
+    ip_addrs = []
+    offs = len(text)
+
+    for ifname in netifaces.interfaces():
+        if "lo" not in ifname and "br-" not in ifname:
+            if netifaces.AF_INET in netifaces.ifaddresses(ifname):
+                addr = netifaces.ifaddresses(ifname)[netifaces.AF_INET][0]['addr']
+                if addr.startswith(text):
+                    ip_addrs.append(addr)
+
+    return ip_addrs
+
 
 def pick_random(input_list):
 	return input_list[random.randint(0, len(input_list)-1)]
